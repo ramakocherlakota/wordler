@@ -7,7 +7,7 @@ cnx = mysql.connector.connect(user='wordle', password='',
 
 subquery = ""
 
-scores_table = "all_scores"
+scores_table = "scores"
 
 if len(sys.argv) > 1:
     subqueries = []
@@ -19,8 +19,6 @@ if len(sys.argv) > 1:
     subquery = "where " + " and ".join(subqueries)
     
 query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select guess, score, count(*) as c from {scores_table} {subquery} group by 1, 2) as t1 group by 1 order by 2 limit 5"
-
-print(query)
 
 cursor = cnx.cursor()
 

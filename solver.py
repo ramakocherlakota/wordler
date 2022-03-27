@@ -5,7 +5,7 @@ cnx = mysql.connector.connect(user='wordle', password='',
                               host='127.0.0.1',
                               database='wordle')
 
-scores_table = "all_scores"
+scores_table = "scores"
 
 def get_score(target, guess):
     query = f"select score, 0 from {scores_table} where guess='{guess}' and answer='{target}'"
