@@ -1,0 +1,96 @@
+1. filter down to the possible remaining words
+2. for each guess, iterate through the words, computing the score.  
+3. compte how many words there are for each of the 243 scores
+3. for each score, there is a p value that is #score_words / #words.  If you get that score from the guess, then there are log(#score_words) bits of uncertainty about what the real word is.  So
+H(guess) = sum_score #score_words log(#score_words) / #words
+4. Choose a guess from the bucket that minimizes H(guess)
+
+things I did:
+- answers.txt are the words that are allowed as answers
+- words.txt are the words that are allowed as guesses
+- answers-answers-scores.txt is the outcome of 
+python3 all-scores.py answers.txt answers.txt
+- scores.txt is the outcome of 
+python3 all-scores.py answers.txt words.txt
+- big-socres.txt is the outcome of 
+python3 all-scores.py words.txt words.txt
+- answers-and-scores-counts.txt is the outcome of
+cut -d '|' -f 2,3 answers-answers-scores.txt | sort | uniq -c > answers-and-scores-counts.txt
+- guesses-and-scores-and-counts.txt is the outcome of 
+cut -d '|' -f 2,3 scores.txt | sort | uniq -c > guesses-and-scores-and-counts.txt
+- conditional-H.txt
+cat guesses-and-scores-and-counts.txt | python3 ./conditional-H.py | sort -n -k2 > conditional-H.txt
+- conditional-H-answers.txt
+cat answers-and-scores-and-counts.txt | python3 ./conditional-H.py | sort -n -k2 > conditional-H.txt
+
+created local database wordle with no pwd
+mysql -u wordle wordle
+
+create table scores(
+  answer varchar(40) not null,
+  guess varchar(40) not null,
+  score varchar(6) not null,
+  primary key(guess, answer),
+  key(guess, score),
+  key(answer, score)
+);
+
+load data local infile '/Users/rama/wordler/scores-fixed.txt' into table scores fields terminated by '|';
+
+drop function conditional_h;
+delimiter $$
+create function conditional_h(g varchar(40))
+returns double
+reads sql data
+begin
+  declare ans double;
+  set ans = 0;
+  select sum(c * log(c)/log(2))/sum(c) into ans from (select score, count(*) c from scores where scores.guess=g group by 1) as s1 ;
+  return ans;
+end
+$$
+delimiter ;
+
+select answer, conditional_h(answer) from answers order by 2  limit 10;
++--------+-----------------------+
+| answer | conditional_h(answer) |
++--------+-----------------------+
+| raise  |     5.298886787326121 |
+| slate  |      5.32102110119164 |
+| crate  |     5.341922473884084 |
+| irate  |     5.345399497706812 |
+| trace  |     5.346247764288161 |
+| arise  |     5.355856777261598 |
+| stare  |     5.369516442986675 |
+| snare  |     5.406707617690596 |
+| arose  |     5.408999775743247 |
+| least  |     5.425150832468332 |
++--------+-----------------------+
+10 rows in set (2.81 sec)
+
+select distinct answer from scores where answer in (select answer from scores where guess='raise' and score='----w') and answer in (select answer from scores where guess='venom' and score='-w---');
+
+create temporary table compatible_answers like scores;
+insert into compatible_answers (select * from scores where answer in (select answer from scores where guess='raise' and score='----w') and answer in (select answer from scores where guess='venom' and score='-w---') and guess in (select answer from scores where guess='raise' and score='----w') and guess in (select answer from scores where guess='venom' and score='-w---')) ;
+
+create temporary table another_table as select guess, score, count(*) as c from compatible_answers group by 1, 2;
+
+select guess, sum(c * log(c) / log(2)) / sum(c) from another_table group by 1 order by 2 limit 1;
+
+select guess, sum(c * log(c) / log(2)) / sum(c) from (select guess, score, count(*) as c from scores group by 1, 2) as t1 group by 1 order by 2 limit 10;
+
+select guess, sum(c * log(c) / log(2)) / sum(c) from (select guess, score, count(*) as c from scores
+where
+answer in (select answer from scores where guess='raise' and score='----w')
+and guess in (select answer from scores where guess='raise' and score='----w')
+group by 1, 2) as t1 group by 1 order by 2 limit 5;
+
+select guess, sum(c * log(c) / log(2)) / sum(c) from (select guess, score, count(*) as c from scores
+where
+answer in (select answer from scores where guess='raise' and score='-----')
+and guess in (select answer from scores where guess='raise' and score='-----')
+and answer in (select answer from scores where guess='mount' and score='w--w-')
+and guess in (select answer from scores where guess='mount' and score='w--w-')
+group by 1, 2) as t1 group by 1 order by 2 limit 5;
+
+
