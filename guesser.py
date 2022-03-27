@@ -20,6 +20,8 @@ if len(sys.argv) > 1:
     
 query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select guess, score, count(*) as c from {scores_table} {subquery} group by 1, 2) as t1 group by 1 order by 2 limit 5"
 
+print(query)
+
 cursor = cnx.cursor()
 
 cursor.execute(query)
