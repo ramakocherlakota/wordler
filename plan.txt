@@ -1,3 +1,44 @@
+- to support:
+  - solve wordle for given word
+  - solve wordle for random word
+  - next guess for wordle given success so far  
+  - all of the above for quordle
+  - run through all answer words and see how wordler does (in hard mode, all_socres mode)
+
+- things to do:
+  - what about quordle?
+  - move all this to the cloud
+
+
+----------------
+
+think this through.
+
+Suppose you guess "patch" and you get back "-BW--".  
+
+select * from all_scores where guess='patch' and score='-bw--';
+There are 36 rows that come back.  The answers are the possible answers.
+
+Now we want to know what to guess.  For each guess g there is a distribution of possible scores and a distribution of possible answers that correspond to it.  But the answers are constrained to be one of the 36 answers from before...
+
+Pr(A|S) = Pr(A & S) / Pr(S)
+
+
+this seems to be right?
+
+select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select g.guess, score, count(*) as c from all_scores a, guesses g where a.guess=g.guess and answer in (select answer from all_scores where guess='patch' and score='-bbbb') group by 1, 2) as t group by 1 order by 2 limit 5;
+
+yes, that is right.... in the sense that each guess reduces the previous guess's uncertainty by the maximum amount
+
+this should be easy to generalize to quordle
+
+what does hard mode look like?  adds constraints on the guess to say that g.guess in some subselect
+
+For each one, 
+
+-----------------
+
+
 1. filter down to the possible remaining words
 2. for each guess, iterate through the words, computing the score.  
 3. compte how many words there are for each of the 243 scores

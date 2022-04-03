@@ -1,0 +1,15 @@
+import sys
+import Wordler
+
+guess_scores = []
+if len(sys.argv) > 1:
+    for i in range(1, len(sys.argv)):
+        arg = sys.argv[i]
+        guess_score = arg.split("=")
+        guess_scores.append(guess_score)
+
+wordler = new Wordler(guess_scores=guess_scores, debug=True)
+
+next_guess = wordler.next_guess()
+
+
