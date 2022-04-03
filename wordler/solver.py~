@@ -1,4 +1,0 @@
-import Wordler
-
-wordler = new Wordler()
-
