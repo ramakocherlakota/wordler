@@ -1,5 +1,7 @@
 import mysql.connector
 
+guess_guess_scores = "scores"
+
 class Wordler:
     def __init__(self, guess_scores=[], scores_table="scores", hard_mode=False, debug=False):
         self.guess_scores = guess_scores
@@ -62,14 +64,19 @@ class Wordler:
             return unique_sol
         subqueries = []
         subquery = ""
+        hard_mode_subqueries = []
+        hard_mode_subquery = ""
         for guess_score in self.guess_scores:
             (guess, score) = guess_score
             subqueries.append(f"answer in (select answer from {self.scores_table} where guess='{guess}' and score='{score}')")            
             if self.hard_mode:
-                subqueries.append(f"(select score from {self.scores_table} s where g.guess='{guess}' and s.answer=a.answer) = '{self.score}'");
+                hard_mode_subqueries.append(f"g.guess in (select answer  from {guess_guess_scores} where '{guess}'= guess and '{score}' = score)")
         subquery =  " and " + " and ".join(subqueries)
-        query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select g.guess, score, count(*) as c from {self.scores_table} a, guesses g where a.guess = g.guess {subquery} group by 1, 2) as t1 group by 1 order by 2, 1 limit 1"
+        if self.hard_mode:
+            hard_mode_subquery = " and " + " and ".join(hard_mode_subqueries)
+        query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select g.guess, score, count(*) as c from {self.scores_table} a, guesses g where a.guess = g.guess {subquery} {hard_mode_subquery} group by 1, 2) as t1  group by 1 order by 2, 1 limit 1"
         csr = self.query(query)
+        retval = None
         for (guess, entropy) in csr:
             retval = (guess, entropy)
         return retval

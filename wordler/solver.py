@@ -48,6 +48,8 @@ while True:
         print(f"{guess} -> {score} ")
         break
 
+print(target)
+
 
 
 
