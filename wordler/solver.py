@@ -34,21 +34,25 @@ if not wordler.get_score(target, target):
 
 score = wordler.get_score(target, guess)
 entropy = wordler.conditional_entropy(guess, score)
-print(f"{guess} -> {score} [{entropy}]" )
+i = 1
+print(f"{i}. {guess} -> {score} [{entropy}]" )
 
 wordler.add_guess(guess, score)
 
 while True:
+    i = i + 1
     (guess, entropy) = wordler.next_guess()
     score = wordler.get_score(target, guess)
     if entropy:
-        print(f"{guess} -> {score} [{entropy}]")
+        print(f"{i}. {guess} -> {score} [{entropy}]")
         wordler.add_guess(guess, score)
     else:
-        print(f"{guess} -> {score} ")
+        print(f"{i}. {guess} -> {score} ")
+        if target != guess:
+            print(f"{i+1}. {target} -> BBBBB ")
         break
 
-print(target)
+
 
 
 
