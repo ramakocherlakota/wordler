@@ -1,7 +1,5 @@
 import mysql.connector
 
-guess_guess_scores = "scores"
-
 class Wordler:
     def __init__(self, guess_scores=[], scores_table="scores", hard_mode=False, debug=False):
         self.guess_scores = guess_scores
@@ -70,7 +68,7 @@ class Wordler:
             (guess, score) = guess_score
             subqueries.append(f"answer in (select answer from {self.scores_table} where guess='{guess}' and score='{score}')")            
             if self.hard_mode:
-                hard_mode_subqueries.append(f"g.guess in (select answer  from {guess_guess_scores} where '{guess}'= guess and '{score}' = score)")
+                hard_mode_subqueries.append(f"g.guess in (select answer from {self.scores_table} where '{guess}'= guess and '{score}' = score)")
         subquery =  " and " + " and ".join(subqueries)
         if self.hard_mode:
             hard_mode_subquery = " and " + " and ".join(hard_mode_subqueries)
@@ -79,4 +77,30 @@ class Wordler:
         retval = None
         for (guess, entropy) in csr:
             retval = (guess, entropy)
+        return retval
+
+    def get_random_answer(self):
+        csr = self.query("select answer, 0 from answers order by rand() limit 1")
+        for (answer, ignore) in csr:
+            return answer
+
+    def solve(self, target, guess):
+        score = self.get_score(target, guess)
+        entropy = self.conditional_entropy(guess, score)
+        retval = [[guess, score, entropy]]
+        self.add_guess(guess, score)
+        while True:
+            (guess, entropy) = self.next_guess()
+            score = self.get_score(target, guess)
+            if score == "BBBBB":
+                retval.append([guess, score, 0.00])
+                break
+            if entropy:
+                retval.append([guess, score, entropy])
+                self.add_guess(guess, score)
+            else:
+                retval.append([guess, score])
+                if target != guess:
+                    retval.append([target, "BBBBB", 0.00])
+                break
         return retval

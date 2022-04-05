@@ -1,7 +1,9 @@
 - to support:
-  - solve wordle for given word
-  - solve wordle for random word
-  - next guess for wordle given success so far  
+  - raondomize guess instead of always taking the first allowed one
+X  - solve wordle for given word
+X  - solve wordle for random word
+  - mastermind instead of wordle
+X  - next guess for wordle given success so far  
   - all of the above for quordle
   - run through all answer words and see how wordler does (in hard mode, all_socres mode)
 
@@ -76,6 +78,7 @@ create table scores(
   key(answer, score)
 );
 
+perl -pe 's/ /-/g' big-scores.txt > big-scores-fixed.txt 
 load data local infile '/Users/rama/wordler/scores-fixed.txt' into table scores fields terminated by '|';
 
 drop function conditional_h;
