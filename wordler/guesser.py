@@ -8,7 +8,7 @@ if len(sys.argv) > 1:
         guess_score = arg.split("=")
         guess_scores.append(guess_score)
 
-wordler = wordler.Wordler(guess_scores=guess_scores, debug=True)
+wordler = wordler.Wordler(guess_scores=guess_scores, debug=True, max_words=10, hard_mode=True)
 
 print (wordler.next_guess())
 

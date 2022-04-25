@@ -1,11 +1,12 @@
 import mysql.connector
 
 class Wordler:
-    def __init__(self, guess_scores=[], scores_table="scores", hard_mode=False, debug=False):
+    def __init__(self, guess_scores=[], scores_table="scores", hard_mode=False, debug=False, max_words=1):
         self.guess_scores = guess_scores
         self.scores_table = scores_table
         self.hard_mode = hard_mode
         self.debug = debug
+        self.max_words = max_words
         self.dbh = None
 
     def db(self):
@@ -72,7 +73,7 @@ class Wordler:
         subquery =  " and " + " and ".join(subqueries)
         if self.hard_mode:
             hard_mode_subquery = " and " + " and ".join(hard_mode_subqueries)
-        query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select g.guess, score, count(*) as c from {self.scores_table} a, guesses g where a.guess = g.guess {subquery} {hard_mode_subquery} group by 1, 2) as t1  group by 1 order by 2, 1 limit 1"
+        query = f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from (select g.guess, score, count(*) as c from {self.scores_table} a, guesses g where a.guess = g.guess {subquery} {hard_mode_subquery} group by 1, 2) as t1  group by 1 order by 2, 1 limit {self.max_words}"
         csr = self.query(query)
         retval = None
         for (guess, entropy) in csr:
@@ -99,7 +100,7 @@ class Wordler:
                 retval.append([guess, score, entropy])
                 self.add_guess(guess, score)
             else:
-                retval.append([guess, score])
+                retval.append([guess, score, 0.00])
                 if target != guess:
                     retval.append([target, "BBBBB", 0.00])
                 break
