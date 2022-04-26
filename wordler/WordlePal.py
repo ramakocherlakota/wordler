@@ -2,17 +2,18 @@ import mysql.connector
 
 class WordlePal:
 
-    def __init__(self, scores_table="scores", debug=False, hard_mode=False):
+    def __init__(self, scores_table="scores", starting_word="raise", debug=False, hard_mode=False):
         self.scores_table = scores_table
         self.hard_mode = hard_mode 
+        self.starting_word = starting_word 
         self.debug = debug
         self.dbh = None
 
     def db(self):
         if self.dbh is None:
             self.dbh = mysql.connector.connect(user='wordle', password='',
-                                         host='127.0.0.1',
-                                         database='wordle')
+                                               host='127.0.0.1',
+                                               database='wordle')
         return self.dbh
 
     def query(self, sql):
@@ -59,9 +60,9 @@ class WordlePal:
                 subqueries.append(f"answer in (select answer from {self.scores_table} where guess='{guess}' and score='{score}')")            
             else:
                 subqueries.append(f"guess='{guess}' and score='{score}'")            
-        subquery =   " and ".join(subqueries)
-        sql = f"select count(*) as c, min(answer) from {self.scores_table} where {subquery} "
-        csr = self.query(sql)
+                subquery =   " and ".join(subqueries)
+                sql = f"select count(*) as c, min(answer) from {self.scores_table} where {subquery} "
+                csr = self.query(sql)
         for (c, answer) in csr:
             if c == 1:
                 return (answer, None)
@@ -73,4 +74,29 @@ class WordlePal:
         for (guess, entropy) in csr:
             return (guess, entropy)
 
+    def conditional_entropy(self, guess, score):
+        sql = f"select log(count(*))/log(2) as h, 0 from {self.scores_table} where guess='{guess}' and score='{score}' "
+        csr = self.query(sql)
+        for (h, ignore) in csr:
+            return h
 
+    def solve(self, target):
+        guess = self.starting_word
+        score = self.get_score(target, guess)
+        entropy = self.conditional_entropy(guess, score)
+        
+        guesses = [guess]
+        scores = [score]
+        entropies = [entropy]
+
+        while True:
+            (guess, entropy) = self.guess(guesses, scores)
+            score = self.get_score(target, guess)
+            guesses.append(guess)
+            scores.append(score)
+            entropies.append(entropy)
+            print([guesses, scores, entropies])
+            if score == "BBBBB" or entropy is None:
+                break
+        return [guesses, scores, entropies]
+        
