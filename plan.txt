@@ -1,3 +1,9 @@
+- adding iam stuff to rds instance:
+  - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.LoadFromS3.html
+  - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.Authorizing.IAM.AddRoleToDBCluster.html
+  - troublehshooting: https://stackoverflow.com/questions/40246937/amazon-aurora-1-8-load-data-from-s3-cannot-instantiate-s3-client
+  - had to add AmazonS3FullAccess to role assumed by database
+
 - to support:
   - raondomize guess instead of always taking the first allowed one
 X  - solve wordle for given word
