@@ -1,11 +1,11 @@
 import sys
-import wordler
+import WordlePal
 
 target = None
 hard_mode = False
 debug = False
 scores_table = "scores"
-guess = "raise"
+starting_word = "raise"
 
 if len(sys.argv) > 1:
     for i in range(1, len(sys.argv)):
@@ -18,7 +18,7 @@ if len(sys.argv) > 1:
                 debug = True
             if arg == "--all":
                 scores_table = "all_scores"
-                guess = "soare"
+                starting_word = "soare"
             if arg == "--random":
                 target = "--random"
         else:
@@ -28,7 +28,7 @@ if not target:
     print("You must provide a target word")
     exit(1)
 
-wordler = wordler.Wordler(debug=debug, scores_table=scores_table, hard_mode=hard_mode)
+wordler = WordlePal.WordlePal(debug=debug, scores_table=scores_table, starting_word=starting_word, hard_mode=hard_mode)
 
 if target == "--random":
     target = wordler.get_random_answer()
@@ -38,6 +38,6 @@ if not wordler.get_score(target, target):
     print(target + " is not a valid answer")
     exit(1)
 
-solution = wordler.solve(target, guess)
+solution = wordler.solve(target)
 for s in solution:
     print(s)

@@ -1,15 +1,28 @@
 import sys
-import wordler
+import WordlePal
 
-guess_scores = []
+guesses = []
+scores = []
+hard_mode = False
+debug = False
+scores_table = "scores"
 if len(sys.argv) > 1:
     for i in range(1, len(sys.argv)):
         arg = sys.argv[i]
-        guess_score = arg.split("=")
-        guess_scores.append(guess_score)
+        if arg.startswith("-"):
+            if arg == "--hard":
+                hard_mode = True
+            if arg == "--debug":
+                debug = True
+            if arg == "--all":
+                scores_table = "all_scores"
+        else:
+            guess_score = arg.split("=")
+            guesses.append(guess_score[0])
+            scores.append(guess_score[1])
 
-wordler = wordler.Wordler(guess_scores=guess_scores, debug=True, max_words=10, hard_mode=True)
+wordler = WordlePal.WordlePal(debug=debug, hard_mode=hard_mode)
 
-print (wordler.next_guess())
+print(wordler.guess(guesses, scores))
 
 

@@ -1,7 +1,7 @@
 import sys
 import WordlePal
 
-wordlePal = WordlePal.WordlePal(debug=True, hard_mode=False, keep_temporary=True, scores_table='all_scores')
+wordlePal = WordlePal.WordlePal(debug=True, hard_mode=False, keep_temporary=True)
 
 #print(wordlePal.solve(sys.argv[1]))
 

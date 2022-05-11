@@ -91,7 +91,7 @@ class WordlePal:
         for (h, ignore) in csr:
             return h
 
-    def solve(self, target, max_iterations=-1):
+    def solve(self, target, max_iterations=20):
         guess = self.starting_word
         score = self.get_score(target, guess)
         entropy = self.conditional_entropy(guess, score)
@@ -114,3 +114,7 @@ class WordlePal:
             iteration = iteration + 1
         return [guesses, scores, entropies]
         
+    def get_random_answer(self):
+        csr = self.query("select answer, 0 from (select distinct(answer) from scores) as c order by rand() limit 1")
+        for (answer, ignore) in csr:
+            return answer
