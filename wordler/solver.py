@@ -39,5 +39,4 @@ if not wordler.get_score(target, target):
     exit(1)
 
 solution = wordler.solve(target)
-for s in solution:
-    print(s)
+print(solution)

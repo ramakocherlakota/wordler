@@ -47,9 +47,9 @@ class WordlePal:
         self.query(f"alter table {name} add primary key(guess, score), add key(score, guess)")
 
     def guess(self, guesses, responses) :
-        unique_sol = self.unique_solution(guesses, responses)
-        if unique_sol:
-            return unique_sol
+        (count, answer) = self.guessable_solution(guesses, responses)
+        if count == 1:
+            return [answer, None, 1]
         else:
             self.guess_table("t1", guesses, responses)
             return self.min_entropy("t1")
@@ -59,7 +59,7 @@ class WordlePal:
         for (score, ignore) in cursor:
             return score
 
-    def unique_solution(self, guesses, responses):
+    def guessable_solution(self, guesses, responses):
         subqueries = []
         subquery = ""
         if len(guesses) == 0:
@@ -73,17 +73,14 @@ class WordlePal:
                 subqueries.append(f"guess='{guess}' and score='{score}'")            
             subquery =   " and ".join(subqueries)
         sql = f"select count(*) as c, min(answer) from {self.scores_table} where {subquery} "
-        csr = self.query(sql,  "uniqueness check")
+        csr = self.query(sql,  "guessable")
         for (c, answer) in csr:
-            if c == 1:
-                return (answer, None)
-            else:
-                return False
+            return (c, answer)
 
     def min_entropy(self, name):
-        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from {name} group by 1 order by 2, 1 limit 1", "min entropy")
-        for (guess, entropy) in csr:
-            return (guess, entropy)
+        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h, sum(c) as total from {name} group by 1 order by 2, 1 limit 1", "min entropy")
+        for (guess, entropy, count) in csr:
+            return (guess, entropy, int(count))
 
     def conditional_entropy(self, guess, score):
         sql = f"select log(count(*))/log(2) as h, 0 from {self.scores_table} where guess='{guess}' and score='{score}' "
@@ -95,24 +92,29 @@ class WordlePal:
         guess = self.starting_word
         score = self.get_score(target, guess)
         entropy = self.conditional_entropy(guess, score)
-        
+
         guesses = [guess]
         scores = [score]
         entropies = [entropy]
+        counts = []
 
         iteration = 1
         while iteration != max_iterations:
-            (guess, entropy) = self.guess(guesses, scores)
+            (guess, entropy, count) = self.guess(guesses, scores)
             score = self.get_score(target, guess)
             guesses.append(guess)
             scores.append(score)
             entropies.append(entropy)
+            counts.append(count)
             if self.debug:
-                print([guesses, scores, entropies])
+                print([guesses, scores, entropies, counts])
             if score == "BBBBB" or entropy is None:
                 break
             iteration = iteration + 1
-        return [guesses, scores, entropies]
+        return { "guesses": guesses, 
+                 "scores": scores, 
+                 "entropies": entropies, 
+                 "counts": counts }
         
     def get_random_answer(self):
         csr = self.query("select answer, 0 from (select distinct(answer) from scores) as c order by rand() limit 1")
