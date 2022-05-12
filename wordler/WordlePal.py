@@ -52,7 +52,7 @@ class WordlePal:
     def guess(self, guesses, responses) :
         (count, answer) = self.guessable_solution(guesses, responses)
         if count == 1:
-            return [answer, None, 1]
+            return [answer, None]
         else:
             self.guess_table("t1", guesses, responses)
             return self.min_entropy("t1")
@@ -81,9 +81,9 @@ class WordlePal:
             return (c, answer)
 
     def min_entropy(self, name):
-        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h, sum(c) as total from {name} group by 1 order by 2, 1 limit 1", "min entropy")
-        for (guess, entropy, count) in csr:
-            return (guess, entropy, int(count))
+        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from {name} group by 1 order by 2, 1 limit 1", "min entropy")
+        for (guess, entropy) in csr:
+            return (guess, entropy)
 
     def conditional_entropy(self, guess, score):
         sql = f"select log(count(*))/log(2) as h, 0 from {self.scores_table} where guess='{guess}' and score='{score}' "
@@ -99,25 +99,22 @@ class WordlePal:
         guesses = [guess]
         scores = [score]
         entropies = [entropy]
-        counts = []
 
         iteration = 1
         while iteration != max_iterations:
-            (guess, entropy, count) = self.guess(guesses, scores)
+            (guess, entropy) = self.guess(guesses, scores)
             score = self.get_score(target, guess)
             guesses.append(guess)
             scores.append(score)
             entropies.append(entropy)
-            counts.append(count)
             if self.debug:
-                print([guesses, scores, entropies, counts])
+                print([guesses, scores, entropies])
             if score == "BBBBB" or entropy is None:
                 break
             iteration = iteration + 1
         return { "guesses": guesses, 
                  "scores": scores, 
-                 "entropies": entropies, 
-                 "counts": counts }
+                 "entropies": entropies }
         
     def get_random_answer(self):
         csr = self.query("select answer, 0 from (select distinct(answer) from scores) as c order by rand() limit 1")
