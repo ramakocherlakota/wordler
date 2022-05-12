@@ -1,4 +1,5 @@
 import mysql.connector
+import time
 
 class WordlePal:
 
@@ -25,11 +26,13 @@ class WordlePal:
         return self.dbh
 
     def query(self, sql, title=None):
+        cursor = self.db().cursor()
+        start = time.time()
+        cursor.execute(sql)
+        end = time.time()
         if self.debug:
             if title is not None:
-                print(f"{title}: {sql}")
-        cursor = self.db().cursor()
-        cursor.execute(sql)
+                print(f"{title}: ({end - start}) {sql}")
         return cursor
 
     def guess_table(self, name, guesses, responses):
