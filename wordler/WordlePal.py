@@ -1,5 +1,4 @@
 import mysql.connector
-import time
 
 class WordlePal:
 
@@ -27,24 +26,19 @@ class WordlePal:
 
     def query(self, sql, title=None):
         cursor = self.db().cursor()
-        start = time.time()
+        if self.debug and title is not None:
+                print(f"{title}: {sql}")
         cursor.execute(sql)
-        end = time.time()
-        if self.debug:
-            if title is not None:
-                print(f"{title}: ({end - start}) {sql}")
         return cursor
 
     def guess_table(self, name, guesses, responses):
         wheres = ["a.guess = g.guess"]
         for i in range(len(guesses)):
             wheres.append(f"answer in (select answer from {self.scores_table} where guess = '{guesses[i]}' and score = '{responses[i]}')")
-            if self.hard_mode:
-                wheres.append(f"g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score)")
-            else:
-                wheres.append(f"g.guess != '{guesses[i]}'")
+            wheres.append(f"g.guess != '{guesses[i]}'")
+
         where_clause = "where " + " and ".join(wheres)
-        sql = f"select g.guess, score, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2"
+        sql = f"select g.guess, score, g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score) as hard, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2, 3"
         self.query(f"drop {self.temporary} table if exists {name}")
         self.query(f"create {self.temporary} table {name} as {sql}", "creating temp table")
         self.query(f"alter table {name} add primary key(guess, score), add key(score, guess)")
@@ -80,8 +74,11 @@ class WordlePal:
         for (c, answer) in csr:
             return (c, answer)
 
-    def min_entropy(self, name):
-        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from {name} group by 1 order by 2, 1 limit 1", "min entropy")
+    def min_entropy(self, table):
+        hard_mode_clause = ""
+        if self.hard_mode:
+            hard_mode_clause = " where hard "
+        csr = self.query(f"select guess, sum(c * log(c) / log(2)) / sum(c) as h from {table} {hard_mode_clause} group by 1 order by 2, 1 limit 1", "min entropy")
         for (guess, entropy) in csr:
             return (guess, entropy)
 

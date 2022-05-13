@@ -1,5 +1,5 @@
+import QuordlePal
 import sys
-import WordlePal
 
 guesses = []
 scores = []
@@ -19,13 +19,14 @@ if len(sys.argv) > 1:
                 keep_temporary = True
             if arg == "--all":
                 scores_table = "all_scores"
-        else:
-            guess_score = arg.split("=")
-            guesses.append(guess_score[0])
-            scores.append(guess_score[1])
+            if arg.startswith("--guess"):
+                guesses = arg.split("=")[1].split(",")
+            if arg.startswith("--score"):
+                scoreList = arg.split("=")[1]
+                scores.append(scoreList.split(","))
 
-wordler = WordlePal.WordlePal(debug=debug, hard_mode=hard_mode, keep_temporary=keep_temporary)
+quordler = QuordlePal.QuordlePal(debug=debug, hard_mode=hard_mode, keep_temporary=keep_temporary)
 
-print(wordler.guess(guesses, scores))
+print(quordler.guess(guesses, scores))
 
 

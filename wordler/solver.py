@@ -4,6 +4,7 @@ import WordlePal
 target = None
 hard_mode = False
 debug = False
+keep_temporary = False
 scores_table = "scores"
 starting_word = "raise"
 
@@ -16,6 +17,8 @@ if len(sys.argv) > 1:
                 hard_mode = True
             if arg == "--debug":
                 debug = True
+            if arg == "--keep-temporary":
+                keep_temporary = True
             if arg == "--all":
                 scores_table = "all_scores"
                 starting_word = "soare"
@@ -28,7 +31,7 @@ if not target:
     print("You must provide a target word")
     exit(1)
 
-wordler = WordlePal.WordlePal(debug=debug, scores_table=scores_table, starting_word=starting_word, hard_mode=hard_mode)
+wordler = WordlePal.WordlePal(debug=debug, scores_table=scores_table, starting_word=starting_word, hard_mode=hard_mode, keep_temporary=keep_temporary)
 
 if target == "--random":
     target = wordler.get_random_answer()
