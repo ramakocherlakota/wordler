@@ -27,7 +27,7 @@ class WordlePal:
     def query(self, sql, title=None):
         cursor = self.db().cursor()
         if self.debug and title is not None:
-                print(f"{title}: {sql}")
+                print(f">> {title}: {sql}")
         cursor.execute(sql)
         return cursor
 
