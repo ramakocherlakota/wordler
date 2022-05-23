@@ -1,4 +1,5 @@
 import mysql.connector
+import re
 
 class WordlePal:
 
@@ -106,7 +107,7 @@ class WordlePal:
             entropies.append(entropy)
             if self.debug:
                 print([guesses, scores, entropies])
-            if score == "BBBBB" or entropy is None:
+            if re.match(r"^B+$", score) or entropy is None:
                 break
             iteration = iteration + 1
         return { "guesses": guesses, 
