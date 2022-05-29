@@ -31,17 +31,18 @@ class QuordlePal:
         cursor.execute(sql)
         return cursor
     
-    def guess_table(self, name, guesses, responses):
+    def guess_table(self, name, guesses, responses, iteration):
         wheres = ["a.guess = g.guess"]
+        table = f"{name}_{iteration}"
         for i in range(len(guesses)):
             wheres.append(f"answer in (select answer from {self.scores_table} where guess = '{guesses[i]}' and score = '{responses[i]}')")
             wheres.append(f"g.guess != '{guesses[i]}'")
 
         where_clause = "where " + " and ".join(wheres)
         sql = f"select g.guess, score, g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score) as hard, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2, 3"
-        self.query(f"drop {self.temporary} table if exists {name}")
-        self.query(f"create {self.temporary} table {name} as {sql}", "creating temp table")
-        self.query(f"alter table {name} add primary key(guess, score), add key(score, guess)")
+        self.query(f"drop {self.temporary} table if exists {table}")
+        self.query(f"create {self.temporary} table {table} as {sql}", "creating temp table")
+        self.query(f"alter table {table} add primary key(guess, score), add key(score, guess)")
 
     def get_score(self, target, guess):
         cursor = self.query(f"select score, 0 from {self.scores_table} where guess='{guess}' and answer='{target}'", "computing score")
@@ -71,7 +72,7 @@ class QuordlePal:
         for (c, answer) in csr:
             return (c, answer)
 
-    def guess(self, guesses, scores) :
+    def guess(self, guesses, scores, iteration) :
         for target in scores:
             (count, answer) = self.guessable_solution(guesses, scores[target])
             if count == 1:
@@ -81,19 +82,22 @@ class QuordlePal:
 
         for target in scores:
             target_scores = scores[target]
-            self.guess_table(f"q_{target}", guesses, target_scores)
-            self.collate_table(f"q_{target}", f"r_{target}")
-            tables.append(f"r_{target}")
+            self.guess_table(f"q_{target}", guesses, target_scores, iteration)
+            self.collate_table(f"q_{target}", f"r_{target}", iteration)
+            tables.append(f"r_{target}_{iteration}")
 
         return self.min_sum_entropy(tables)
 
-    def collate_table(self, source, dest) :
+    def collate_table(self, source, dest, iteration) :
+        source = f"{source}_{iteration}"
+        dest = f"{dest}_{iteration}"
         self.query(f"drop {self.temporary} table if exists {dest}")
-        hard_clause = ""
-        if self.hard_mode :
-            hard_clause = " and hard "
-        self.query(f"create {self.temporary} table {dest} as select g.guess, sum({source}.c * log({source}.c) / log(2)) / sum({source}.c) as h from guesses g, {source} where {source}.guess = g.guess {hard_clause} group by 1", "collating response")
-        self.query(f"alter table {dest} add key(guess)")
+        if self.hard_mode:
+            self.query(f"create {self.temporary} table {dest} as select g.guess, hard, sum({source}.c * log({source}.c) / log(2)) / sum({source}.c) as h from guesses g, {source} where {source}.guess = g.guess group by 1, 2", "collating response")
+            self.query(f"alter table {dest} add key(guess, hard)")
+        else:
+            self.query(f"create {self.temporary} table {dest} as select g.guess, sum({source}.c * log({source}.c) / log(2)) / sum({source}.c) as h from guesses g, {source} where {source}.guess = g.guess group by 1", "collating response")
+            self.query(f"alter table {dest} add key(guess)")
 
     def min_sum_entropy(self, tables) :
         sums = []
@@ -105,6 +109,9 @@ class QuordlePal:
             hards.append(f"{table}.hard")
         sums_clause = " + ".join(sums)
         tables_clause = ", ".join(tables)
+        if self.hard_mode:
+            hard_clause = "(" + " or ".join(hards) + ")"
+            wheres.append(hard_clause)
         where_clause = " and ".join(wheres)
         sql = f"select g.guess, {sums_clause} from guesses g, {tables_clause} where {where_clause} order by 2 limit 1"
         csr = self.query(sql, "min sum entropy")
@@ -120,8 +127,9 @@ class QuordlePal:
     def solve(self, targets, max_iterations=20):
         guess = self.starting_word
         found = {}
+        found_responses = {}
         guesses = [guess]
-
+        
         scores = {}
         entropy = 0
         for target in targets:
@@ -132,7 +140,7 @@ class QuordlePal:
 
         iteration = 1
         while len(scores) > 0 and iteration != max_iterations:
-            (guess, entropy) = self.guess(guesses, scores)
+            (guess, entropy) = self.guess(guesses, scores, iteration)
             guesses.append(guess)
             entropies.append(entropy)
 
@@ -144,9 +152,25 @@ class QuordlePal:
                     pop_me.append(target)
 
             for target in pop_me:
-                found[target] = len(scores.pop(target))
+                resp = scores.pop(target)
+                found_responses[target] = resp
+                found[target] = len(resp)
             
             iteration = iteration + 1
 
-        return {"guesses":guesses, "scores":found}
+        return {"guesses":guesses, "scores":found, "responses": found_responses}
             
+    def cleanup_temp_tables(self) :
+        drops = []
+        q_s = self.query("show tables like 'q%'")
+        for q in q_s:
+            drops.append(q[0])
+        r_s = self.query("show tables like 'r%'")
+        for r in r_s:
+            drops.append(r[0])
+        if len(drops) > 0:
+            print(f"dropping {drops}")
+            for drop in drops:
+                self.query(f"drop table {drop}")
+        else:
+            print("nothing to drop")
