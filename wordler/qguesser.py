@@ -2,7 +2,7 @@ import QuordlePal
 import sys
 
 guesses = []
-scores = []
+scores = {}
 hard_mode = False
 keep_temporary = False
 debug = False
@@ -23,10 +23,10 @@ if len(sys.argv) > 1:
                 guesses = arg.split("=")[1].split(",")
             if arg.startswith("--score"):
                 scoreList = arg.split("=")[1]
-                scores.append(scoreList.split(","))
+                scores[str(i)] = scoreList.split(",")
 
 quordler = QuordlePal.QuordlePal(debug=debug, hard_mode=hard_mode, keep_temporary=keep_temporary)
 
-print(quordler.guess(guesses, scores))
+print(quordler.guess(guesses, scores, 1))
 
 

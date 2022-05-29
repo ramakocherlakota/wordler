@@ -37,7 +37,6 @@ class QuordlePal:
         for i in range(len(guesses)):
             wheres.append(f"answer in (select answer from {self.scores_table} where guess = '{guesses[i]}' and score = '{responses[i]}')")
             wheres.append(f"g.guess != '{guesses[i]}'")
-
         where_clause = "where " + " and ".join(wheres)
         sql = f"select g.guess, score, g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score) as hard, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2, 3"
         self.query(f"drop {self.temporary} table if exists {table}")
@@ -76,7 +75,7 @@ class QuordlePal:
         for target in scores:
             (count, answer) = self.guessable_solution(guesses, scores[target])
             if count == 1:
-                return [answer, None]
+                return [answer, 0.0]
         
         tables = []
 
@@ -158,7 +157,7 @@ class QuordlePal:
             
             iteration = iteration + 1
 
-        return {"guesses":guesses, "scores":found, "responses": found_responses}
+        return {"attempts": iteration, "guesses": guesses, "scores": found, "responses": found_responses, "entropies": entropies}
             
     def cleanup_temp_tables(self) :
         drops = []

@@ -20,9 +20,6 @@ if len(sys.argv) > 1:
                 keep_temporary = True
             if arg == "--all":
                 scores_table = "all_scores"
-            if arg.startswith("--guess"):
-                guesses = arg.split("=")[1].split(",")
-                starting_word = "raise"
         else:
             targets.append(arg)
 
