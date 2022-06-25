@@ -34,11 +34,14 @@ class QuordlePal:
     def guess_table(self, name, guesses, responses, iteration):
         wheres = ["a.guess = g.guess"]
         table = f"{name}_{iteration}"
+        hard_clauses = []
         for i in range(len(guesses)):
             wheres.append(f"answer in (select answer from {self.scores_table} where guess = '{guesses[i]}' and score = '{responses[i]}')")
             wheres.append(f"g.guess != '{guesses[i]}'")
+            hard_clauses.append(f"g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score)")
         where_clause = "where " + " and ".join(wheres)
-        sql = f"select g.guess, score, g.guess in (select answer from {self.scores_table} where '{guesses[i]}'= guess and '{responses[i]}' = score) as hard, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2, 3"
+        hard_clause = " and ".join(hard_clauses)
+        sql = f"select g.guess, score, {hard_clause} as hard, count(*) as c from {self.scores_table} a, guesses g {where_clause} group by 1, 2, 3"
         self.query(f"drop {self.temporary} table if exists {table}")
         self.query(f"create {self.temporary} table {table} as {sql}", "creating temp table")
         self.query(f"alter table {table} add primary key(guess, score), add key(score, guess)")
